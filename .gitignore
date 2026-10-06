@@ -1,0 +1,20 @@
+# Databricks bundle state
+.databricks/
+
+# Local Python environments and caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# IDE and operating-system files
+.idea/
+.vscode/
+.DS_Store
+
+# Data and notebook archives may contain sensitive records or cell outputs
+data/
+*.parquet
+*.dbc
+

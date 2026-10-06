@@ -1,0 +1,15 @@
+bundle:
+  name: nordeste-health-lakehouse
+
+include:
+  - resources/*.yml
+
+variables:
+  cluster_id:
+    description: ID de um cluster Databricks existente com acesso ao Unity Catalog.
+
+targets:
+  dev:
+    default: true
+    mode: development
+
