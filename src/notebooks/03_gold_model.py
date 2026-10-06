@@ -294,33 +294,6 @@ gravar(ponte, "ponte_estabelecimento_habilitacao")
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC ##Atualizar a documentação da fato profissional
-# MAGIC O comentário publicado precisa corresponder à medida hospitalar corrigida.
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC COMMENT ON TABLE `nordeste-health-lakehouse`.gold.dim_estabelecimento
-# MAGIC IS 'Estabelecimento CNES e localização no snapshot mensal do projeto.';
-# MAGIC COMMENT ON TABLE `nordeste-health-lakehouse`.gold.dim_profissional
-# MAGIC IS 'Profissional e CBO; identificadores pseudonimizados para análise.';
-# MAGIC COMMENT ON TABLE `nordeste-health-lakehouse`.gold.fato_capacidade_hospitalar
-# MAGIC IS 'Capacidade por unidade, competência, classe e tipo de recurso; leitos e equipamentos não são multiplicados por join.';
-# MAGIC COMMENT ON TABLE `nordeste-health-lakehouse`.gold.fato_alocacao_profissionais
-# MAGIC IS 'HORAHOSP: carga horária hospitalar semanal cadastrada por vínculo; não identifica dedicação exclusiva à UTI.';
-# MAGIC CREATE OR REPLACE VIEW `nordeste-health-lakehouse`.gold.vw_capacidade_hospitalar AS
-# MAGIC SELECT e.cnes, e.competencia, e.nome_estabelecimento, e.uf, e.id_municipio, e.nome_municipio,
-# MAGIC        c.tipo_recurso, c.codigo_recurso,
-# MAGIC        l.descricao_tipo_leito, q.descricao_equipamento,
-# MAGIC        c.quantidade_leitos, c.quantidade_equipamentos
-# MAGIC FROM `nordeste-health-lakehouse`.gold.fato_capacidade_hospitalar c
-# MAGIC JOIN `nordeste-health-lakehouse`.gold.dim_estabelecimento e USING (sk_estabelecimento)
-# MAGIC JOIN `nordeste-health-lakehouse`.gold.dim_tipo_leito l USING (sk_tipo_leito)
-# MAGIC JOIN `nordeste-health-lakehouse`.gold.dim_equipamento q USING (sk_equipamento)
-
-# COMMAND ----------
-
 local = dim_est.select("cnes", "competencia", "sk_estabelecimento", "uf", "id_municipio")
 leitos_agregados = lei.groupBy("cnes", "competencia", "codigo_tipo_leito").agg(
     F.sum("quantidade").cast("decimal(24,2)").alias("quantidade_leitos"))
@@ -392,6 +365,33 @@ def reconciliar(origem, destino, medida_origem, medida_destino, nome):
 reconciliar(lei, fat_cap.filter("tipo_recurso = 'LEITO'"), "quantidade", "quantidade_leitos", "leitos")
 reconciliar(equ, fat_cap.filter("tipo_recurso = 'EQUIPAMENTO'"), "quantidade", "quantidade_equipamentos", "equipamentos")
 reconciliar(pro, fat_pro, "horas_semanais", "horas_semanais", "horas")
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ##Atualizar a documentação da fato profissional
+# MAGIC O comentário publicado precisa corresponder à medida hospitalar corrigida.
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC COMMENT ON TABLE `nordeste-health-lakehouse`.gold.dim_estabelecimento
+# MAGIC IS 'Estabelecimento CNES e localização no snapshot mensal do projeto.';
+# MAGIC COMMENT ON TABLE `nordeste-health-lakehouse`.gold.dim_profissional
+# MAGIC IS 'Profissional e CBO; identificadores pseudonimizados para análise.';
+# MAGIC COMMENT ON TABLE `nordeste-health-lakehouse`.gold.fato_capacidade_hospitalar
+# MAGIC IS 'Capacidade por unidade, competência, classe e tipo de recurso; leitos e equipamentos não são multiplicados por join.';
+# MAGIC COMMENT ON TABLE `nordeste-health-lakehouse`.gold.fato_alocacao_profissionais
+# MAGIC IS 'HORAHOSP: carga horária hospitalar semanal cadastrada por vínculo; não identifica dedicação exclusiva à UTI.';
+# MAGIC CREATE OR REPLACE VIEW `nordeste-health-lakehouse`.gold.vw_capacidade_hospitalar AS
+# MAGIC SELECT e.cnes, e.competencia, e.nome_estabelecimento, e.uf, e.id_municipio, e.nome_municipio,
+# MAGIC        c.tipo_recurso, c.codigo_recurso,
+# MAGIC        l.descricao_tipo_leito, q.descricao_equipamento,
+# MAGIC        c.quantidade_leitos, c.quantidade_equipamentos
+# MAGIC FROM `nordeste-health-lakehouse`.gold.fato_capacidade_hospitalar c
+# MAGIC JOIN `nordeste-health-lakehouse`.gold.dim_estabelecimento e USING (sk_estabelecimento)
+# MAGIC JOIN `nordeste-health-lakehouse`.gold.dim_tipo_leito l USING (sk_tipo_leito)
+# MAGIC JOIN `nordeste-health-lakehouse`.gold.dim_equipamento q USING (sk_equipamento)
 
 # COMMAND ----------
 

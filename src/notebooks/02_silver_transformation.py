@@ -44,7 +44,8 @@ def normalizar_colunas(df):
 # possuem o campo COMPETEN informam o mesmo valor; a base de estabelecimentos
 # não traz competência na origem e herda o valor global abaixo.
 COMPETENCIA = "202607"
-RECORTE_TEMPORAL_CONFERIDO = True
+# A validação temporal depende da evidência conferida na célula seguinte.
+RECORTE_TEMPORAL_CONFERIDO = False
 
 # Descrições das medidas quantitativas (metadados para a camada Silver/Gold)
 DESCRICAO_MEDIDA_LEITOS = "leitos existentes cadastrados"          # campo QT_EXIST
@@ -143,6 +144,31 @@ EVIDENCIA_COMPETENCIA_ESTABELECIMENTOS = (
     "Registrar a evidência de compatibilidade temporal da extração."
 )
 LIMIAR_ALERTA_ORFAOS_PCT = 1.0  # limiar operacional de atenção, não regra assistencial
+
+# COMMAND ----------
+
+import json
+# Preencha com a evidência real da extração de estabelecimentos.
+# Ex.: documento de origem, registro de extração ou página da fonte.
+EVIDENCIA_TEMPORAL = {
+"competencia_snapshot": "202607", # AAAAMM comprovado pela fonte
+"fonte": "DataSUS CNES – Cadastro Nacional de Estabelecimentos de Saúde",
+"referencia_verificavel": "https://cnes2.datasus.gov.br/",
+"conferida": False, # altere para True somente após conferir o snapshot real
+}
+campos_texto = ["fonte", "referencia_verificavel"]
+RECORTE_TEMPORAL_CONFERIDO = (
+EVIDENCIA_TEMPORAL["competencia_snapshot"] == COMPETENCIA
+and EVIDENCIA_TEMPORAL["conferida"] is True
+and all(isinstance(EVIDENCIA_TEMPORAL[c], str)
+and EVIDENCIA_TEMPORAL[c].strip() for c in campos_texto)
+)
+EVIDENCIA_COMPETENCIA_ESTABELECIMENTOS = json.dumps(
+EVIDENCIA_TEMPORAL, ensure_ascii=False, sort_keys=True
+)
+assert RECORTE_TEMPORAL_CONFERIDO, (
+"Preencha e confira a evidência temporal antes de seguir."
+)
 
 # COMMAND ----------
 
@@ -268,31 +294,6 @@ def campos_comuns(df, cfg):
 def gravar(df, nome):
     (df.write.format("delta").mode("overwrite").option("overwriteSchema", "true")
      .saveAsTable(tb("silver", nome)))
-
-# COMMAND ----------
-
-import json
-# Preencha com a evidência real da extração de estabelecimentos.
-# Ex.: documento de origem, registro de extração ou página da fonte.
-EVIDENCIA_TEMPORAL = {
-"competencia_snapshot": "202607", # AAAAMM comprovado pela fonte
-"fonte": "DataSUS CNES – Cadastro Nacional de Estabelecimentos de Saúde",
-"referencia_verificavel": "https://cnes2.datasus.gov.br/",
-"conferida": True, # True depois da conferência
-}
-campos_texto = ["fonte", "referencia_verificavel"]
-RECORTE_TEMPORAL_CONFERIDO = (
-EVIDENCIA_TEMPORAL["competencia_snapshot"] == COMPETENCIA
-and EVIDENCIA_TEMPORAL["conferida"] is True
-and all(isinstance(EVIDENCIA_TEMPORAL[c], str)
-and EVIDENCIA_TEMPORAL[c].strip() for c in campos_texto)
-)
-EVIDENCIA_COMPETENCIA_ESTABELECIMENTOS = json.dumps(
-EVIDENCIA_TEMPORAL, ensure_ascii=False, sort_keys=True
-)
-assert RECORTE_TEMPORAL_CONFERIDO, (
-"Preencha e confira a evidência temporal antes de seguir."
-)
 
 # COMMAND ----------
 
